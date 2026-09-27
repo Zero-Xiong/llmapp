@@ -5,11 +5,13 @@ on:
     branches: [main, master]
     paths:
       - 'llm-frontend-python/**'
+      - '.trivyignore'
       - '.github/workflows/llm-frontend-python-ci.yml'
   pull_request:
     branches: [main, master]
     paths:
       - 'llm-frontend-python/**'
+      - '.trivyignore'
       - '.github/workflows/llm-frontend-python-ci.yml'
   workflow_dispatch:
 

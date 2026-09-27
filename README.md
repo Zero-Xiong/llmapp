@@ -245,7 +245,7 @@ For an end-to-end request, use the examples in [metrics_testing.md](llm-multirou
 
 ### Screenshots and CI Run Evidence
 
-The frontend and Swagger screenshots were captured from the locally running applications. DeepEval and Promptfoo images show local terminal CLI output. The Trivy image shows the terminal output of `gh run view --log-failed` for the CI scan; it is not a screenshot of the GitHub Actions results page. The CLI output panels are formatted excerpts, not raw terminal-window screenshots.
+The frontend and Swagger screenshots were captured from the locally running applications. DeepEval, Promptfoo, and Trivy images show local terminal CLI results. These CLI output panels are formatted excerpts, not raw terminal-window screenshots.
 
 **Frontend**
 
@@ -255,19 +255,19 @@ The frontend and Swagger screenshots were captured from the locally running appl
 
 ![llm-multiroute Swagger UI at localhost:8080/swagger-ui.html](docs/screenshots/swagger-ui.png)
 
-**Trivy scan from terminal CLI: failed; Docker Hub push skipped**
+**Local Trivy CLI: both images passed; zero unignored HIGH/CRITICAL findings**
 
-![Trivy scan result from GitHub Actions logs](docs/screenshots/trivy-scan-result.png)
+![Local Trivy scan result for both Docker images](docs/screenshots/trivy-scan-result.png)
 
 **Local DeepEval CLI: serial run passed**
 
-![DeepEval result from GitHub Actions logs](docs/screenshots/deepeval-result.png)
+![DeepEval result from local terminal CLI](docs/screenshots/deepeval-result.png)
 
 **Local Promptfoo CLI: 17 tests passed**
 
-![Promptfoo result from GitHub Actions logs](docs/screenshots/promptfoo-result.png)
+![Promptfoo result from local terminal CLI](docs/screenshots/promptfoo-result.png)
 
-The local Promptfoo run passed 4 classify, 5 sentiment, 3 summarize, and 5 intent tests. The requested serial DeepEval CLI run passed all 92 tests (100%) in 410.43 seconds; DeepEval reported a token cost of approximately $0.45. The earlier parallel `-n 4` run timed out, but is not the result shown in the DeepEval screenshot. Trivy found 38 HIGH and 0 CRITICAL findings in each image; its nonzero exit code prevented Docker Hub login and image publishing. The separate GitHub evaluation runs also need their required repository secrets configured. Do not include real keys or personal data in future screenshots.
+The local Promptfoo run passed 4 classify, 5 sentiment, 3 summarize, and 5 intent tests. The requested serial DeepEval CLI run passed all 92 tests (100%) in 410.43 seconds; DeepEval reported a token cost of approximately $0.45. The earlier parallel `-n 4` run timed out, but is not the result shown in the DeepEval screenshot. Both local Trivy scans passed with zero remaining HIGH/CRITICAL findings after applying `.trivyignore`. Five CVEs remain explicitly suppressed because Debian stable has no fixes listed; these are accepted exceptions, not remediated vulnerabilities. Do not include real keys or personal data in future screenshots.
 
 ## GitHub Actions CI/CD
 
@@ -275,8 +275,8 @@ The workflows run on pushes and pull requests to `main` or `master` when their l
 
 | Workflow | Runs when | Pipeline |
 | --- | --- | --- |
-| [`llm-multiroute-ci.yml`](.github/workflows/llm-multiroute-ci.yml) | `llm-multiroute/**` or its workflow changes | Ruff lint → pytest unit tests → build Docker image → Trivy scan → push image. |
-| [`llm-frontend-python-ci.yml`](.github/workflows/llm-frontend-python-ci.yml) | `llm-frontend-python/**` or its workflow changes | Ruff lint → build Docker image → Trivy scan → push image. |
+| [`llm-multiroute-ci.yml`](.github/workflows/llm-multiroute-ci.yml) | `llm-multiroute/**`, `.trivyignore`, or its workflow changes | Ruff lint → pytest unit tests → build Docker image → Trivy scan → push image. |
+| [`llm-frontend-python-ci.yml`](.github/workflows/llm-frontend-python-ci.yml) | `llm-frontend-python/**`, `.trivyignore`, or its workflow changes | Ruff lint → build Docker image → Trivy scan → push image. |
 | [`promptfoo-tests-ci.yml`](.github/workflows/promptfoo-tests-ci.yml) | `promptfoo-tests/**`, `llm-multiroute/**`, or its workflow changes | Start backend with Docker Compose → wait for `/api/ai/routes` → run four Promptfoo suites sequentially → stop Compose. Uses Node.js 22. |
 | [`deepeval-tests-ci.yml`](.github/workflows/deepeval-tests-ci.yml) | `deepeval-tests/**`, `llm-multiroute/**`, or its workflow changes | Install Python 3.12 dependencies → start backend with Docker Compose → wait for `/api/ai/routes` → run four DeepEval suites sequentially → stop Compose. |
 
@@ -292,6 +292,17 @@ Add workflow credentials in GitHub under **Settings → Secrets and variables �
 ### Docker Image Trivy Scan
 
 The two image workflows build a local `:scan` image, then run Trivy with table output. Findings of severity `CRITICAL` or `HIGH` fail the action (`exit-code: 1`). The scanner reads the root [`.trivyignore`](.trivyignore); review each ignored vulnerability regularly and remove suppressions when they are no longer justified. The scan runs for pull requests too, but Docker Hub login and image publishing are skipped for pull requests. On other events, publishing occurs only after lint/tests/build/scan succeed. To view details, open the GitHub Actions run and expand **Run Trivy vulnerability scanner**; the table reports vulnerability IDs, affected packages, severity, and available fixed versions.
+
+Both Docker build contexts have `.dockerignore` files that exclude local `.env` files, Python virtual environments, caches, and Git metadata. This prevents developer credentials and host-installed packages from being copied into local images. Reproduce the build and scan from the repository root with:
+
+```bash
+docker build --pull -t llm-multiroute:scan -f llm-multiroute/Dockerfile llm-multiroute
+docker build --pull -t llm-frontend-python:scan -f llm-frontend-python/Dockerfile llm-frontend-python
+trivy image --scanners vuln --ignorefile .trivyignore --severity CRITICAL,HIGH --exit-code 1 llm-multiroute:scan
+trivy image --scanners vuln --ignorefile .trivyignore --severity CRITICAL,HIGH --exit-code 1 llm-frontend-python:scan
+```
+
+As of this local run, both scans returned exit code `0`. The exceptions in `.trivyignore` suppress five findings still reported against Debian stable; do not interpret a passing scan as those upstream vulnerabilities being fixed.
 
 ## Configuration and Credentials
 

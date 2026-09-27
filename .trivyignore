@@ -1,6 +1,14 @@
 # glibc: Integer overflow in memalign leads to heap corruption
 # No fix available upstream (status: affected) - suppress until Debian publishes a patch
 CVE-2026-0861
+# Temporary Debian stable exceptions: Debian's tracker lists these as vulnerable
+# on both bookworm and trixie, with fixes only in newer development releases.
+# Review and remove each ID once a fixed stable package is available.
+CVE-2026-16742
+CVE-2026-76642
+CVE-2026-78408
+CVE-2026-78409
+CVE-2026-78410
 CVE-2025-62727
 CVE-2026-53615
 CVE-2026-41992

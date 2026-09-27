@@ -5,11 +5,13 @@ on:
     branches: [main, master]
     paths:
       - 'llm-multiroute/**'
+      - '.trivyignore'
       - '.github/workflows/llm-multiroute-ci.yml'
   pull_request:
     branches: [main, master]
     paths:
       - 'llm-multiroute/**'
+      - '.trivyignore'
       - '.github/workflows/llm-multiroute-ci.yml'
   workflow_dispatch:
 
